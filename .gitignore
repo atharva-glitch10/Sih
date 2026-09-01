@@ -1,0 +1,17 @@
+# MATLAB & Simulink temporary / autosave files
+*.asv
+*.m~
+*.slxc
+*.autosave
+slprj/
+*.mex*
+*.mat
+
+# System & OS files
+Thumbs.db
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo

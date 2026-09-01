@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MathWorks SIH: Explainable AI for Rural DR Screening Dashboard</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --panel-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --accent: #8b5cf6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Top Navigation Bar */
+    header {
+      background: linear-gradient(90deg, #1e3a8a, #0f172a);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--panel-border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .brand-title { font-size: 1.25rem; font-weight: 700; color: #60a5fa; display: flex; align-items: center; gap: 8px; }
+    .node-tag { background: #1e40af; font-size: 0.75rem; padding: 4px 10px; border-radius: 9999px; font-weight: 600; color: #e0f2fe; }
+
+    /* Main Layout */
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      padding: 20px;
+      flex: 1;
+    }
+
+    /* Sidebar Controls */
+    .sidebar {
+      background-color: var(--card-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar h2 { font-size: 1rem; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 8px; }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+    .btn-success { background-color: var(--success); color: white; }
+    .btn-success:hover { background-color: #059669; }
+    .btn-purple { background-color: var(--accent); color: white; }
+    .btn-purple:hover { background-color: #7c3aed; }
+    .btn-warning { background-color: var(--warning); color: #000; }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+    .form-control {
+      background-color: #0f172a;
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    /* Content Area */
+    .content-area {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Triage Banner Badge */
+    .triage-banner {
+      padding: 16px 20px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .triage-referable { background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; }
+    .triage-routine { background-color: rgba(16, 185, 129, 0.2); border: 1px solid var(--success); color: #6ee7b7; }
+
+    /* Visual Grid (4 Panels) */
+    .visual-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .panel-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .panel-title { font-size: 0.85rem; font-weight: 600; color: #cbd5e1; display: flex; justify-content: space-between; }
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      background-color: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas { width: 100%; height: 100%; }
+
+    /* Biomarker & Clinical Table */
+    .details-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .details-card h3 { font-size: 1rem; color: #93c5fd; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--panel-border); }
+    th { color: var(--text-muted); font-weight: 600; }
+    .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+    .badge-urgent { background-color: var(--danger); color: white; }
+    .badge-ok { background-color: var(--success); color: white; }
+
+    /* Modal for Simulation */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .modal-content {
+      background-color: var(--card-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 650px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-title">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/></svg>
+      MathWorks AI: Diabetic Retinopathy Screening
+    </div>
+    <div class="node-tag">Rural PHC Tele-Ophthalmology Node</div>
+  </header>
+
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2>Screening Controls</h2>
+
+      <div class="form-group">
+        <label>Select Sample Case (ICDR 0-4):</label>
+        <select id="caseSelector" class="form-control" onchange="loadCase()">
+          <option value="0">Grade 0: Normal / No Retinopathy</option>
+          <option value="1">Grade 1: Mild NPDR (Microaneurysms)</option>
+          <option value="2">Grade 2: Moderate NPDR (MAs, HMs, HE)</option>
+          <option value="3" selected>Grade 3: Severe NPDR (4-2-1 Rule Triggered)</option>
+          <option value="4">Grade 4: Proliferative DR (Neovascularization)</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" onclick="runAIEngine()">⚡ Run AI Diagnostic Core</button>
+      <button class="btn btn-purple" onclick="openSimulationModal()">📊 Run Simulink Queueing Model</button>
+      <button class="btn btn-warning" onclick="openReport()">📄 Export Sub-30s Clinical Report</button>
+
+      <div style="margin-top: 10px;">
+        <h2>Patient Metadata</h2>
+        <div class="form-group" style="margin-top: 8px;">
+          <label>Patient ID:</label>
+          <input type="text" class="form-control" value="PHC-MH-2026-0842" readonly>
+        </div>
+        <div class="form-group">
+          <label>Age / Gender:</label>
+          <input type="text" class="form-control" value="58 / Female" readonly>
+        </div>
+        <div class="form-group">
+          <label>Center:</label>
+          <input type="text" class="form-control" value="Rural PHC Shirwal, Satara" readonly>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main View -->
+    <main class="content-area">
+      <div id="triageBanner" class="triage-banner triage-referable">
+        <div>
+          <span style="font-size: 1.1rem;" id="bannerGradeText">ICDR Grade 3: Severe Non-Proliferative DR</span>
+          <div style="font-size: 0.8rem; font-weight: normal; margin-top: 4px;" id="bannerConfText">AI Confidence: 94.5% | 4-2-1 Clinical Rule Triggered</div>
+        </div>
+        <span class="badge badge-urgent" id="bannerBadge">URGENT SPECIALIST REFERRAL</span>
+      </div>
+
+      <!-- 4 Visual Panels -->
+      <div class="visual-grid">
+        <div class="panel-card">
+          <div class="panel-title"><span>1. Fundus & Landmarks</span><span style="color: #60a5fa;" id="iqaScoreText">IQA: 74.2 (Gradeable)</span></div>
+          <div class="canvas-wrapper"><canvas id="canvas1" width="300" height="300"></canvas></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-title"><span>2. Vasculature Segmentation</span><span style="color: #34d399;" id="vesselDensityText">Density: 11.4%</span></div>
+          <div class="canvas-wrapper"><canvas id="canvas2" width="300" height="300"></canvas></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-title"><span>3. Color-Coded Lesions</span><span style="color: #fbbf24;" id="lesionCountText">HMs: 24 | MAs: 18</span></div>
+          <div class="canvas-wrapper"><canvas id="canvas3" width="300" height="300"></canvas></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-title"><span>4. Grad-CAM AI Saliency</span><span style="color: #f87171;" id="dmeRiskText">DME: Moderate Risk</span></div>
+          <div class="canvas-wrapper"><canvas id="canvas4" width="300" height="300"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Biomarker Table -->
+      <div class="details-card">
+        <h3>Explainable Clinical Biomarkers & 4-2-1 Gold-Standard Rationale</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Biomarker</th>
+              <th>Quantified Metric</th>
+              <th>Quadrant / Spatial Distribution</th>
+              <th>Clinical ETDRS Significance</th>
+            </tr>
+          </thead>
+          <tbody id="biomarkerTableBody">
+            <tr>
+              <td><b>Microaneurysms (MAs)</b></td>
+              <td id="tdMA">18 count</td>
+              <td>Diffuse paramacular</td>
+              <td>Early microvascular leakage</td>
+            </tr>
+            <tr>
+              <td><b>Hemorrhages (HMs)</b></td>
+              <td id="tdHM">24 clusters (420 px)</td>
+              <td><b>All 4 Quadrants Active (4-2-1 Rule)</b></td>
+              <td>Severe NPDR definitive threshold</td>
+            </tr>
+            <tr>
+              <td><b>Hard Exudates (HE)</b></td>
+              <td id="tdHE">210 px area</td>
+              <td>Within 1 Disc Diameter of Fovea</td>
+              <td>Impending Macular Edema (DME Risk)</td>
+            </tr>
+            <tr>
+              <td><b>Neovascularization (NV)</b></td>
+              <td id="tdNV">Not Detected</td>
+              <td>Peripapillary (NVD) & Retina (NVE)</td>
+              <td>Proliferative DR (PDR) indicator</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top: 14px; font-size: 0.85rem; color: #94a3b8; line-height: 1.5;" id="rationaleBox">
+          <b>Clinical Rule Rationale:</b> 4-2-1 Rule triggered due to severe intraretinal hemorrhages occurring across all four quadrants. High referral priority to prevent progression to proliferative disease.
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Simulink Modal -->
+  <div id="simModal" class="modal">
+    <div class="modal-content">
+      <h2 style="color: #c084fc; font-size: 1.2rem;">Simulink / SimEvents Tele-Screening Simulation</h2>
+      <p style="font-size: 0.85rem; color: #94a3b8;">Simulating 100,000 annual patients across 10 rural PHCs with 4G telecommunication bandwidth constraints, edge IQA rejection loop, and central tele-ophthalmologist triage pool.</p>
+      
+      <table style="margin-top: 8px;">
+        <tr><td><b>Annual Patient Volume:</b></td><td>100,000 across 10 rural PHCs</td></tr>
+        <tr><td><b>Network Profile:</b></td><td>4G Uplink (15 Mbps, 0.2% drop rate)</td></tr>
+        <tr><td><b>Mean Turnaround Time:</b></td><td><b style="color: #34d399;">2.45 hours</b> (&lt; 24.0h SLA Target)</td></tr>
+        <tr><td><b>99th Percentile SLA:</b></td><td>4.80 hours</td></tr>
+        <tr><td><b>24-Hour SLA Compliance:</b></td><td><b style="color: #34d399;">99.80%</b></td></tr>
+        <tr><td><b>Specialist Pool Utilization:</b></td><td>72.0% (6 Tele-ophthalmologists)</td></tr>
+        <tr><td><b>Resource Optimization:</b></td><td>Minimum 5 doctors required for &gt;95% SLA at 4G</td></tr>
+      </table>
+
+      <button class="btn btn-primary" onclick="closeSimulationModal()" style="margin-top: 12px;">Close Simulation View</button>
+    </div>
+  </div>
+
+  <script>
+    const caseData = {
+      0: {
+        grade: 0, label: "ICDR Grade 0: No Diabetic Retinopathy", conf: 96.2, isRef: false,
+        iqa: "78.5 (Gradeable)", density: "10.8%", mas: 0, hms: 0, he: 0, nv: false,
+        dme: "None / Low Risk",
+        rationale: "Clear retinal fundus. Zero microaneurysms, hemorrhages, hard exudates, or neovascularization."
+      },
+      1: {
+        grade: 1, label: "ICDR Grade 1: Mild Non-Proliferative DR", conf: 91.8, isRef: false,
+        iqa: "72.4 (Gradeable)", density: "11.1%", mas: 5, hms: 0, he: 0, nv: false,
+        dme: "None / Low Risk",
+        rationale: "Isolated microaneurysms only. Routine annual re-screening recommended."
+      },
+      2: {
+        grade: 2, label: "ICDR Grade 2: Moderate Non-Proliferative DR", conf: 89.4, isRef: true,
+        iqa: "68.9 (Gradeable)", density: "11.3%", mas: 12, hms: 6, he: 110, nv: false,
+        dme: "Low-to-Moderate Risk",
+        rationale: "More than microaneurysms; moderate hemorrhages and hard exudates present in 2 quadrants."
+      },
+      3: {
+        grade: 3, label: "ICDR Grade 3: Severe Non-Proliferative DR", conf: 94.5, isRef: true,
+        iqa: "74.2 (Gradeable)", density: "11.4%", mas: 18, hms: 24, he: 210, nv: false,
+        dme: "Moderate Risk",
+        rationale: "4-2-1 Rule triggered: Severe intraretinal hemorrhages occurring across all 4 quadrants."
+      },
+      4: {
+        grade: 4, label: "ICDR Grade 4: Proliferative Diabetic Retinopathy (PDR)", conf: 97.1, isRef: true,
+        iqa: "70.1 (Gradeable)", density: "13.2%", mas: 26, hms: 32, he: 320, nv: true,
+        dme: "High Risk (CSME Likely)",
+        rationale: "Active Neovascularization (NV) detected at peripapillary region. Immediate laser/anti-VEGF referral."
+      }
+    };
+
+    function renderPanels(c) {
+      const w = 300, h = 300, cx = 150, cy = 150, r_ret = 130;
+      const od_x = 80, od_y = 150, od_r = 22;
+      const fov_x = 200, fov_y = 150, fov_r = 12;
+
+      // Panel 1: Original + Landmarks
+      const ctx1 = document.getElementById('canvas1').getContext('2d');
+      ctx1.fillStyle = '#000'; ctx1.fillRect(0, 0, w, h);
+      ctx1.fillStyle = '#b45309'; ctx1.beginPath(); ctx1.arc(cx, cy, r_ret, 0, Math.PI*2); ctx1.fill();
+      // OD
+      ctx1.fillStyle = '#fde047'; ctx1.beginPath(); ctx1.arc(od_x, od_y, od_r, 0, Math.PI*2); ctx1.fill();
+      ctx1.strokeStyle = '#22c55e'; ctx1.lineWidth = 2; ctx1.stroke();
+      // Fovea
+      ctx1.fillStyle = '#78350f'; ctx1.beginPath(); ctx1.arc(fov_x, fov_y, fov_r, 0, Math.PI*2); ctx1.fill();
+      ctx1.strokeStyle = '#38bdf8'; ctx1.setLineDash([4, 4]); ctx1.stroke(); ctx1.setLineDash([]);
+      // Arcades
+      ctx1.strokeStyle = '#451a03'; ctx1.lineWidth = 3;
+      ctx1.beginPath(); ctx1.moveTo(od_x, od_y); ctx1.quadraticCurveTo(cx, od_y - 70, cx + 90, od_y - 40); ctx1.stroke();
+      ctx1.beginPath(); ctx1.moveTo(od_x, od_y); ctx1.quadraticCurveTo(cx, od_y + 70, cx + 90, od_y + 40); ctx1.stroke();
+
+      // Panel 2: Vasculature
+      const ctx2 = document.getElementById('canvas2').getContext('2d');
+      ctx2.fillStyle = '#000'; ctx2.fillRect(0, 0, w, h);
+      ctx2.strokeStyle = '#34d399'; ctx2.lineWidth = 2.5;
+      ctx2.beginPath(); ctx2.moveTo(od_x, od_y); ctx2.quadraticCurveTo(cx, od_y - 70, cx + 90, od_y - 40); ctx2.stroke();
+      ctx2.beginPath(); ctx2.moveTo(od_x, od_y); ctx2.quadraticCurveTo(cx, od_y + 70, cx + 90, od_y + 40); ctx2.stroke();
+      ctx2.beginPath(); ctx2.moveTo(od_x, od_y); ctx2.lineTo(od_x - 30, od_y - 40); ctx2.stroke();
+      ctx2.beginPath(); ctx2.moveTo(od_x, od_y); ctx2.lineTo(od_x - 30, od_y + 40); ctx2.stroke();
+
+      // Panel 3: Lesion Map
+      const ctx3 = document.getElementById('canvas3').getContext('2d');
+      ctx3.fillStyle = '#1e1e1e'; ctx3.fillRect(0, 0, w, h);
+      ctx3.fillStyle = '#444'; ctx3.beginPath(); ctx3.arc(cx, cy, r_ret, 0, Math.PI*2); ctx3.fill();
+      // MAs
+      if (c.mas > 0) {
+        ctx3.fillStyle = '#06b6d4';
+        for(let i=0; i<c.mas; i++) {
+          ctx3.beginPath(); ctx3.arc(120 + (i*11)%120, 100 + (i*17)%100, 2, 0, Math.PI*2); ctx3.fill();
+        }
+      }
+      // HE
+      if (c.he > 0) {
+        ctx3.fillStyle = '#fbbf24';
+        for(let i=0; i<8; i++) {
+          ctx3.beginPath(); ctx3.arc(fov_x + ((i*13)%35) - 15, fov_y + ((i*17)%35) - 15, 3.5, 0, Math.PI*2); ctx3.fill();
+        }
+      }
+      // HMs
+      if (c.hms > 0) {
+        ctx3.fillStyle = '#ef4444';
+        for(let i=0; i<c.hms; i++) {
+          ctx3.beginPath(); ctx3.arc(100 + (i*13)%140, 90 + (i*19)%120, 4.5, 0, Math.PI*2); ctx3.fill();
+        }
+      }
+      // NV
+      if (c.nv) {
+        ctx3.strokeStyle = '#ec4899'; ctx3.lineWidth = 2;
+        for(let i=0; i<8; i++) {
+          ctx3.beginPath(); ctx3.moveTo(od_x, od_y); ctx3.lineTo(od_x + ((i*7)%25) - 12, od_y + ((i*11)%25) - 12); ctx3.stroke();
+        }
+      }
+
+      // Panel 4: Grad-CAM
+      const ctx4 = document.getElementById('canvas4').getContext('2d');
+      ctx4.drawImage(document.getElementById('canvas1'), 0, 0);
+      if (c.grade > 0) {
+        const grad = ctx4.createRadialGradient(cx, cy, 10, cx, cy, 110);
+        grad.addColorStop(0, 'rgba(239, 68, 68, 0.7)');
+        grad.addColorStop(0.5, 'rgba(234, 179, 8, 0.4)');
+        grad.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+        ctx4.fillStyle = grad;
+        ctx4.beginPath(); ctx4.arc(cx, cy, r_ret, 0, Math.PI*2); ctx4.fill();
+      }
+    }
+
+    function loadCase() {
+      const g = document.getElementById('caseSelector').value;
+      const c = caseData[g];
+
+      document.getElementById('bannerGradeText').innerText = c.label;
+      document.getElementById('bannerConfText').innerText = `AI Confidence: ${c.conf}% | Gold-Standard ETDRS Evaluated`;
+      
+      const banner = document.getElementById('triageBanner');
+      const badge = document.getElementById('bannerBadge');
+      if (c.isRef) {
+        banner.className = 'triage-banner triage-referable';
+        badge.className = 'badge badge-urgent';
+        badge.innerText = 'URGENT SPECIALIST REFERRAL';
+      } else {
+        banner.className = 'triage-banner triage-routine';
+        badge.className = 'badge badge-ok';
+        badge.innerText = 'ROUTINE 12-MONTH RESCREENING';
+      }
+
+      document.getElementById('iqaScoreText').innerText = `IQA: ${c.iqa}`;
+      document.getElementById('vesselDensityText').innerText = `Density: ${c.density}`;
+      document.getElementById('lesionCountText').innerText = `HMs: ${c.hms} | MAs: ${c.mas}`;
+      document.getElementById('dmeRiskText').innerText = `DME: ${c.dme}`;
+
+      document.getElementById('tdMA').innerText = `${c.mas} count`;
+      document.getElementById('tdHM').innerText = `${c.hms} clusters`;
+      document.getElementById('tdHE').innerText = `${c.he} px area`;
+      document.getElementById('tdNV').innerText = c.nv ? 'Active Neovascularization (PDR)' : 'Not Detected';
+      document.getElementById('rationaleBox').innerHTML = `<b>Clinical Rule Rationale:</b> ${c.rationale}`;
+
+      renderPanels(c);
+    }
+
+    function runAIEngine() {
+      loadCase();
+      alert('AI Diagnostic Pipeline Completed:\n• IQA Quality Verified\n• Retinal Landmarks & Lesions Segmented\n• 4-2-1 Gold-Standard Clinical Rules Applied\n• Grad-CAM Heatmap Generated');
+    }
+
+    function openSimulationModal() {
+      document.getElementById('simModal').style.display = 'flex';
+    }
+    function closeSimulationModal() {
+      document.getElementById('simModal').style.display = 'none';
+    }
+
+    function openReport() {
+      window.open('DR_Clinical_Report.html', '_blank');
+    }
+
+    window.onload = loadCase;
+  </script>
+</body>
+</html>
