@@ -1,23 +1,23 @@
 {
-  "patientID": "PHC-MH-2026-0842",
-  "patient_id": "PHC-MH-2026-0842",
-  "imagePath": "data/uploads/figure6.png",
-  "image_path": "data/uploads/figure6.png",
+  "patientID": "TEST-PORT-5173",
+  "patient_id": "TEST-PORT-5173",
+  "imagePath": "data/synthetic/DR_Grade2_Sample01.bmp",
+  "image_path": "data/synthetic/DR_Grade2_Sample01.bmp",
   "iqaScore": "78.4 (Gradeable)",
-  "icdrGrade": 3,
-  "gradeLabel": "Grade 3 - Severe Non-Proliferative DR (Severe NPDR)",
+  "icdrGrade": 2,
+  "gradeLabel": "Moderate NPDR",
   "confidence": 0.945,
   "isReferrable": true,
   "dmeRisk": "Moderate Risk",
-  "dmeScore": 75,
+  "dmeScore": 50,
   "probabilities": [
-    0.01,
     0.03,
-    0.08,
+    0.07,
     0.82,
-    0.06
+    0.06,
+    0.02
   ],
-  "ruleExplanation": "4-2-1 Rule evaluated: Grade 3 (Grade 3 - Severe Non-Proliferative DR (Severe NPDR)).",
+  "ruleExplanation": "4-2-1 Rule evaluated: Grade 2 (Moderate NPDR).",
   "biomarkers": {
     "OpticDiscCenter": [
       143,
@@ -38,6 +38,10 @@
       "Q3_IN": 7,
       "Q4_IT": 6
     },
-    "Neovascularization": false
+    "Neovascularization": false,
+    "microaneurysms": 12,
+    "hemorrhages": 16,
+    "hardExudatesArea": 120,
+    "neovascularization": false
   }
 }

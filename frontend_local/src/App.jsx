@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ScreeningProvider } from "./context/ScreeningContext";
 
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -16,13 +15,12 @@ import ReportGeneration from "./pages/ReportGeneration";
 
 function App() {
   return (
-    <ScreeningProvider>
-      <BrowserRouter>
-        <div className="app">
-          <Sidebar />
+    <BrowserRouter>
+      <div className="app">
+        <Sidebar />
 
-          <div className="main-area">
-            <Header />
+        <div className="main-area">
+          <Header />
 
           <main>
             <Routes>
@@ -77,7 +75,6 @@ function App() {
         </div>
       </div>
     </BrowserRouter>
-  </ScreeningProvider>
   );
 }
 

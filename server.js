@@ -182,8 +182,24 @@ app.get('/api/reports/:patientID', (req, res) => {
 });
 
 
+// Upload base64 or file
+app.post('/api/upload', express.json({ limit: '50mb' }), (req, res) => {
+    const { filename, base64Data } = req.body;
+    if (!filename || !base64Data) {
+        return res.status(400).json({ error: 'filename and base64Data required' });
+    }
+    const uploadsDir = path.join(__dirname, 'data', 'uploads');
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    const filePath = path.join(uploadsDir, filename);
+    const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    fs.writeFileSync(filePath, Buffer.from(cleanBase64, 'base64'));
+    const relPath = path.join('data', 'uploads', filename).replace(/\\/g, '/');
+    res.json({ path: relPath, filename, url: '/' + relPath });
+});
+
 app.post('/api/diagnose', (req, res) => {
-    const { imagePath, patientID } = req.body;
+    const imagePath = req.body.imagePath || req.body.image_path;
+    const patientID = req.body.patientID || req.body.patient_id;
     
     if (!imagePath || !patientID) {
         return res.status(400).json({ error: 'Missing imagePath or patientID in request body' });
