@@ -23,3 +23,10 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+
+# Generated runtime uploads and heatmap caches
+data/uploads/*
+!data/uploads/figure6.png
+reports/*_gradcam.png
+reports/*_result.json
+!reports/PHC-MH-2026-0842_result.json

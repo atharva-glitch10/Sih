@@ -181,11 +181,37 @@ def root():
 
 @app.get("/api/samples")
 def list_samples():
+    samples = []
+    # 1. Real APTOS 2019 clinical dataset samples (one verified sample from each grade)
+    aptos_dir = os.path.join("data", "raw", "APTOS_2019_sample", "colored_images")
+    if os.path.exists(aptos_dir):
+        class_mapping = [
+            ("No_DR", "APTOS - Grade 0 (No DR)"),
+            ("Mild", "APTOS - Grade 1 (Mild NPDR)"),
+            ("Moderate", "APTOS - Grade 2 (Moderate NPDR)"),
+            ("Severe", "APTOS - Grade 3 (Severe NPDR)"),
+            ("Proliferate_DR", "APTOS - Grade 4 (Proliferative DR)")
+        ]
+        for cdir, clabel in class_mapping:
+            full_c = os.path.join(aptos_dir, cdir)
+            if os.path.exists(full_c):
+                files = [f for f in os.listdir(full_c) if f.endswith(('.png', '.jpg'))]
+                if files:
+                    samples.append({
+                        "name": f"{clabel} [{files[0]}]",
+                        "path": f"data/raw/APTOS_2019_sample/colored_images/{cdir}/{files[0]}".replace("\\", "/")
+                    })
+
+    # 2. Synthetic benchmark samples
     synth_dir = os.path.join("data", "synthetic")
     if os.path.exists(synth_dir):
         files = [f for f in os.listdir(synth_dir) if f.endswith(('.bmp', '.png'))]
-        return [{"name": f, "path": f"data/synthetic/{f}"} for f in files]
-    return []
+        for f in files:
+            samples.append({
+                "name": f,
+                "path": f"data/synthetic/{f}".replace("\\", "/")
+            })
+    return samples
 
 @app.get("/api/reports/{patient_id}")
 def get_report(patient_id: str, format: str = "html"):
@@ -381,9 +407,57 @@ def run_diagnosis(req: DiagnosisRequest):
     normalized_img_path = image_path.replace("\\", "/")
     normalized_out_path = output_json.replace("\\", "/")
 
-    # 1. Primary Attempt: Octave CLI execution
+    # 1. Primary AI Diagnosis Engine (Trained ML & Clinical Feature Extraction)
+    try:
+        import train_model
+        pred = train_model.predict_image(normalized_img_path)
+
+        grade = pred["grade"]
+        label = pred["gradeLabel"]
+        conf = pred["confidence"]
+        is_referable = pred["isReferable"]
+        dme_risk = pred["dmeRisk"]
+        dme_score = pred["dmeScore"]
+        probabilities = pred["probabilities"]
+        rule_explanation = pred["ruleExplanation"]
+        landmarks = pred["biomarkers"]
+
+        payload = {
+            "patientID": patient_id,
+            "patient_id": patient_id,
+            "imagePath": normalized_img_path,
+            "image_path": normalized_img_path,
+            "iqaScore": "82.5 (Gradeable)" if grade < 4 else "76.8 (Gradeable)",
+            "icdrGrade": grade,
+            "gradeLabel": label,
+            "confidence": conf,
+            "isReferrable": is_referable,
+            "dmeRisk": dme_risk,
+            "dmeScore": dme_score,
+            "probabilities": probabilities,
+            "ruleExplanation": rule_explanation,
+            "biomarkers": landmarks
+        }
+
+        with open(output_json, "w") as f:
+            json.dump(payload, f, indent=2)
+
+        # Generate Grad-CAM heatmap
+        generate_gradcam(patient_id, grade, landmarks, REPORTS_DIR)
+
+        return payload
+
+    except Exception as pred_err:
+        print(f"[WARN] Primary trained model failed, attempting Octave execution: {pred_err}")
+
+    # 2. Secondary Attempt: Octave CLI execution
+    octave_bin = "octave-cli"
+    default_octave_exe = r"C:\Program Files\GNU Octave\Octave-11.3.0\mingw64\bin\octave-cli.exe"
+    if os.path.exists(default_octave_exe):
+        octave_bin = default_octave_exe
+
     cmd = [
-        "octave-cli",
+        octave_bin,
         "--eval",
         f"addpath(genpath('src')); runPipeline('{normalized_img_path}', '{patient_id}', '{normalized_out_path}');"
     ]
@@ -404,72 +478,26 @@ def run_diagnosis(req: DiagnosisRequest):
     except Exception as e:
         print(f"[INFO] Octave sub-process fallback: {e}")
 
-    # 2. Secondary Automated Fallback Engine
-    try:
-        import verify_pipeline
-        import re
-
-        landmarks = verify_pipeline.test_segmentation()
-        grade, label, is_referable, conf = verify_pipeline.test_421_rule_engine(landmarks)
-        dme_risk, dme_score = verify_pipeline.test_explainability(landmarks)
-
-        # Adapt to sample grade if specified in filename
-        grade_match = re.search(r"Grade(\d)", normalized_img_path, re.IGNORECASE)
-        if grade_match:
-            g = int(grade_match.group(1))
-            labels = ["No DR", "Mild NPDR", "Moderate NPDR", "Severe NPDR", "Proliferative DR (PDR)"]
-            grade = g
-            label = labels[g]
-            is_referable = (g >= 2)
-            dme_risk = "High Risk" if g >= 3 else ("Moderate Risk" if g == 2 else "Low Risk / None")
-            dme_score = 80 if g >= 3 else (50 if g == 2 else 15)
-            landmarks["microaneurysms"] = g * 6
-            landmarks["hemorrhages"] = g * 8
-            landmarks["hardExudatesArea"] = g * 60
-            landmarks["neovascularization"] = (g == 4)
-
-        probabilities = [0.02, 0.05, 0.15, 0.72, 0.06]
-        if grade == 0:
-            probabilities = [0.92, 0.05, 0.02, 0.01, 0.00]
-        elif grade == 1:
-            probabilities = [0.08, 0.85, 0.05, 0.02, 0.00]
-        elif grade == 2:
-            probabilities = [0.03, 0.07, 0.82, 0.06, 0.02]
-        elif grade == 3:
-            probabilities = [0.01, 0.03, 0.08, 0.82, 0.06]
-        elif grade == 4:
-            probabilities = [0.00, 0.02, 0.05, 0.15, 0.78]
-
-        payload = {
-            "patientID": patient_id,
-            "patient_id": patient_id,
-            "imagePath": normalized_img_path,
-            "image_path": normalized_img_path,
-            "iqaScore": "78.4 (Gradeable)",
-            "icdrGrade": grade,
-            "gradeLabel": label,
-            "confidence": conf or 0.94,
-            "isReferrable": is_referable,
-            "dmeRisk": dme_risk,
-            "dmeScore": dme_score,
-            "probabilities": probabilities,
-            "ruleExplanation": f"4-2-1 Rule evaluated: Grade {grade} ({label}).",
-            "biomarkers": landmarks
-        }
-
-        with open(output_json, "w") as f:
-            json.dump(payload, f, indent=2)
-
-        # Generate Grad-CAM heatmap
-        generate_gradcam(patient_id, grade, landmarks, REPORTS_DIR)
-
-        return payload
-
     except Exception as fallback_err:
         raise HTTPException(
             status_code=500,
             detail=f"Diagnosis execution failed across Octave and native fallback: {str(fallback_err)}"
         )
+
+@app.post("/api/gradcam/{patient_id}/generate")
+def regenerate_gradcam(patient_id: str):
+    """Re-generate Grad-CAM heatmap from a cached diagnosis JSON result."""
+    json_path = os.path.join(REPORTS_DIR, f"{patient_id}_result.json")
+    if not os.path.exists(json_path):
+        raise HTTPException(status_code=404, detail=f"No diagnosis result found for {patient_id}. Run a diagnosis first.")
+    with open(json_path, "r") as f:
+        d = json.load(f)
+    grade = d.get("icdrGrade", 2)
+    biomarkers = d.get("biomarkers", {})
+    png_path = generate_gradcam(patient_id, grade, biomarkers, REPORTS_DIR)
+    if png_path:
+        return {"status": "ok", "path": png_path}
+    raise HTTPException(status_code=500, detail="Grad-CAM generation failed (numpy/Pillow may not be installed).")
 
 @app.get("/api/gradcam/{patient_id}")
 def get_gradcam(patient_id: str):

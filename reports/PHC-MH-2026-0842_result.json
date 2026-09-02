@@ -1,43 +1,35 @@
 {
   "patientID": "PHC-MH-2026-0842",
   "patient_id": "PHC-MH-2026-0842",
-  "imagePath": "data/uploads/figure6.png",
-  "image_path": "data/uploads/figure6.png",
-  "iqaScore": "78.4 (Gradeable)",
+  "imagePath": "data/synthetic/DR_Grade3_Sample01.bmp",
+  "image_path": "data/synthetic/DR_Grade3_Sample01.bmp",
+  "iqaScore": "82.5 (Gradeable)",
   "icdrGrade": 3,
-  "gradeLabel": "Grade 3 - Severe Non-Proliferative DR (Severe NPDR)",
-  "confidence": 0.945,
+  "gradeLabel": "Severe NPDR",
+  "confidence": 0.94,
   "isReferrable": true,
-  "dmeRisk": "Moderate Risk",
-  "dmeScore": 75,
+  "dmeRisk": "High Risk",
+  "dmeScore": 85,
   "probabilities": [
-    0.01,
-    0.03,
-    0.08,
-    0.82,
-    0.06
+    0.003,
+    0.006,
+    0.026,
+    0.94,
+    0.026
   ],
-  "ruleExplanation": "4-2-1 Rule evaluated: Grade 3 (Grade 3 - Severe Non-Proliferative DR (Severe NPDR)).",
+  "ruleExplanation": "ETDRS 4-2-1 Rule: Diagnosed Severe NPDR. Microaneurysms: 18, Hemorrhages: 22, Exudates: 2472px.",
   "biomarkers": {
-    "OpticDiscCenter": [
-      143,
-      256
-    ],
-    "OpticDiscRadius": 36,
-    "FoveaCenter": [
-      332,
-      256
-    ],
-    "VesselDensity": 0.114,
-    "MicroaneurysmsCount": 18,
-    "HardExudatesArea": 210,
-    "HemorrhagesCount": 24,
-    "HemorrhageQuadrantDistribution": {
-      "Q1_ST": 6,
-      "Q2_SN": 5,
-      "Q3_IN": 7,
-      "Q4_IT": 6
-    },
-    "Neovascularization": false
+    "microaneurysms": 18,
+    "hemorrhages": 22,
+    "hardExudatesArea": 2472,
+    "vesselDensity": 0.056,
+    "quadsActive": 0,
+    "neovascularization": false,
+    "quadrantCounts": {
+      "Q1_ST": 0,
+      "Q2_SN": 0,
+      "Q3_IN": 0,
+      "Q4_IT": 0
+    }
   }
 }

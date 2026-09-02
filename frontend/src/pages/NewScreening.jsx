@@ -378,54 +378,28 @@ function NewScreening() {
 
 
         {/* Source Toggle Tabs */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+        <div className="source-selector">
           <button
             type="button"
+            className={`source-option ${imageSource === 'sample' ? 'active' : ''}`}
             onClick={() => setImageSource('sample')}
-            style={{
-              flex: 1,
-              padding: '10px 14px',
-              borderRadius: '8px',
-              border: imageSource === 'sample' ? '2px solid #2b6cb0' : '1px solid #cbd5e1',
-              background: imageSource === 'sample' ? '#ebf8ff' : '#fff',
-              color: imageSource === 'sample' ? '#2b6cb0' : '#4a5568',
-              fontWeight: 700,
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-            }}
           >
-            <ScanEye size={16} /> Select Sample Image (Dataset)
+            <ScanEye size={18} />
+            <span>Select Sample Image (Dataset)</span>
           </button>
           <button
             type="button"
+            className={`source-option ${imageSource === 'upload' ? 'active' : ''}`}
             onClick={() => setImageSource('upload')}
-            style={{
-              flex: 1,
-              padding: '10px 14px',
-              borderRadius: '8px',
-              border: imageSource === 'upload' ? '2px solid #2b6cb0' : '1px solid #cbd5e1',
-              background: imageSource === 'upload' ? '#ebf8ff' : '#fff',
-              color: imageSource === 'upload' ? '#2b6cb0' : '#4a5568',
-              fontWeight: 700,
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-            }}
           >
-            <Upload size={16} /> Upload Custom Image
+            <Upload size={18} />
+            <span>Upload Custom Image</span>
           </button>
         </div>
 
         {imageSource === 'sample' && (
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4a5568', marginBottom: '6px' }}>
+          <div className="sample-selector" style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: 'var(--text-mid)', marginBottom: '8px' }}>
               Choose Retinal Fundus Sample from Backend:
             </label>
             <select
@@ -446,11 +420,12 @@ function NewScreening() {
             >
               {samples.map((s) => (
                 <option key={s.path} value={s.path}>
-                  {s.name} {s.name.includes('Grade0') ? '— Grade 0 (No DR)' :
-                            s.name.includes('Grade1') ? '— Grade 1 (Mild NPDR)' :
-                            s.name.includes('Grade2') ? '— Grade 2 (Moderate NPDR)' :
-                            s.name.includes('Grade3') ? '— Grade 3 (Severe NPDR)' :
-                            s.name.includes('Grade4') ? '— Grade 4 (Proliferative DR)' : ''}
+                  {s.name.includes('APTOS') ? s.name :
+                    `${s.name} ${s.name.includes('Grade0') ? '— Grade 0 (No DR)' :
+                                s.name.includes('Grade1') ? '— Grade 1 (Mild NPDR)' :
+                                s.name.includes('Grade2') ? '— Grade 2 (Moderate NPDR)' :
+                                s.name.includes('Grade3') ? '— Grade 3 (Severe NPDR)' :
+                                s.name.includes('Grade4') ? '— Grade 4 (Proliferative DR)' : ''}`}
                 </option>
               ))}
             </select>
