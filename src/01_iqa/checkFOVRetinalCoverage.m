@@ -17,20 +17,16 @@ function [coverageScore, isAdequate, details] = checkFOVRetinalCoverage(img, min
 %
 % Reference:
 %   MathWorks SIH - Explainable AI for DR Screening in Rural PHCs
-
     if nargin < 2 || isempty(minCoveragePct)
         minCoveragePct = 45.0; % Typical circular fundus occupies 50-80% of square sensor
     end
-
     if isa(img, 'uint8')
         imgD = im2double(img);
     else
         imgD = img;
     end
-
     [H, W, ~] = size(imgD);
     totalPixels = H * W;
-
     % Red channel or grayscale thresholding to find retinal disc
     if size(imgD, 3) == 3
         redChan = imgD(:, :, 1);
@@ -39,13 +35,11 @@ function [coverageScore, isAdequate, details] = checkFOVRetinalCoverage(img, min
         redChan = imgD;
         grayImg = imgD;
     end
-
     % Binary retinal mask extraction with morphological cleanup
     rawMask = (redChan > 0.08) | (grayImg > 0.05);
-    se = strel('disk', max(3, round(min(H, W) * 0.015)));
+    se = strel('disk', max(3, round(min([H, W]) * 0.015)), 0);
     cleanMask = imclose(rawMask, se);
     cleanMask = imfill(cleanMask, 'holes');
-
     % Keep largest connected component (the retinal field)
     cc = bwconncomp(cleanMask);
     if cc.NumObjects > 0
@@ -57,9 +51,7 @@ function [coverageScore, isAdequate, details] = checkFOVRetinalCoverage(img, min
         retinalMask = false(size(cleanMask));
         maxNum = 0;
     end
-
     retinalAreaPct = (maxNum / totalPixels) * 100;
-
     % Retinal mask centroid and circularity check
     props = regionprops(retinalMask, 'Centroid', 'Eccentricity', 'Area', 'Perimeter');
     if ~isempty(props)
@@ -72,15 +64,12 @@ function [coverageScore, isAdequate, details] = checkFOVRetinalCoverage(img, min
         normOffset = 1.0;
         eccentricity = 1.0;
     end
-
     % Score based on coverage, decentration penalty, and shape circularity
     coverageFactor = min(1.0, retinalAreaPct / 65.0);
     centerPenalty = min(1.0, normOffset * 0.5);
     shapeFactor = max(0, 1.0 - eccentricity * 0.4);
-
     coverageScore = max(0, min(100, (coverageFactor * 0.6 + shapeFactor * 0.4 - centerPenalty * 0.3) * 100));
     isAdequate = (retinalAreaPct >= minCoveragePct) && (normOffset < 0.45);
-
     details = struct();
     details.coverageScore = coverageScore;
     details.isAdequate = isAdequate;
@@ -89,3 +78,4 @@ function [coverageScore, isAdequate, details] = checkFOVRetinalCoverage(img, min
     details.eccentricity = eccentricity;
     details.retinalMask = retinalMask;
 end
+

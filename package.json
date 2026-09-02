@@ -1,0 +1,21 @@
+{
+  "name": "sih-dr-screening-bridge",
+  "version": "1.0.0",
+  "description": "Backend API Bridge (Node.js & Python FastAPI) for MathWorks SIH DR Screening Pipeline",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": [
+    "diabetic-retinopathy",
+    "octave",
+    "matlab",
+    "express",
+    "fastapi"
+  ],
+  "author": "MathWorks SIH Team",
+  "license": "MIT"
+}

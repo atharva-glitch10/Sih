@@ -15,15 +15,12 @@ function [odMask, odCenter, odRadius, odProps] = locateOpticDisc(img, retinalMas
 %
 % Reference:
 %   MathWorks SIH - Explainable AI for DR Screening in Rural PHCs
-
     if isa(img, 'uint8')
         imgD = im2double(img);
     else
         imgD = img;
     end
-
     [H, W, C] = size(imgD);
-
     if nargin < 2 || isempty(retinalMask)
         if C == 3
             gray = rgb2gray(imgD);
@@ -31,9 +28,8 @@ function [odMask, odCenter, odRadius, odProps] = locateOpticDisc(img, retinalMas
             gray = imgD;
         end
         retinalMask = gray > 0.05;
-        retinalMask = imfill(imclose(retinalMask, strel('disk', 5)), 'holes');
+        retinalMask = imfill(imclose(retinalMask, strel('disk', 5, 0)), 'holes');
     end
-
     % Optic disc is brightest in Red channel and grayscale
     if C == 3
         redChan = imgD(:, :, 1);
@@ -43,21 +39,17 @@ function [odMask, odCenter, odRadius, odProps] = locateOpticDisc(img, retinalMas
     else
         odComposite = imgD;
     end
-
     % Erode retinal mask slightly to avoid bright perimeter edge artifacts
-    erodedMask = imerode(retinalMask, strel('disk', round(min(H, W) * 0.04)));
+    se = strel('disk', max(3, round(min([H, W]) * 0.015)), 0);
+    erodedMask = imerode(retinalMask, se);
     odComposite(~erodedMask) = 0;
-
-    % Top 1% brightest pixels as candidate seed region
     candidateThreshold = quantile(odComposite(erodedMask), 0.985);
     brightMask = (odComposite >= candidateThreshold) & erodedMask;
-
     % Morphological closing to coalesce OD core
-    expectedODRadius = round(min(H, W) * 0.07); % OD is typically 1/14 to 1/10 of image width
-    seOD = strel('disk', max(3, round(expectedODRadius * 0.4)));
+    expectedODRadius = round(min([H, W]) * 0.07);
+    seOD = strel('disk', max(3, round(expectedODRadius * 0.4)), 0);
     brightClosed = imclose(brightMask, seOD);
     brightFilled = imfill(brightClosed, 'holes');
-
     % Connected component selection based on area and circularity
     cc = bwconncomp(brightFilled);
     if cc.NumObjects > 0
@@ -89,16 +81,15 @@ function [odMask, odCenter, odRadius, odProps] = locateOpticDisc(img, retinalMas
         odCenter = [round(W * 0.25), round(H * 0.5)];
         odRadius = expectedODRadius;
     end
-
     % Generate smooth circular mask around detected OD center
     [X, Y] = meshgrid(1:W, 1:H);
     distSq = (X - odCenter(1)).^2 + (Y - odCenter(2)).^2;
     odMask = distSq <= (odRadius^2);
     odMask = odMask & retinalMask;
-
     odProps = struct();
     odProps.center = odCenter;
     odProps.radius = odRadius;
     odProps.diameter = 2 * odRadius;
     odProps.mask = odMask;
 end
+

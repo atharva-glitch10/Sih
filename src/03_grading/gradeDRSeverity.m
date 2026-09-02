@@ -1,9 +1,11 @@
 function testResults = runAllUnitTests()
-    % Guaranteed default initialization of test result variables
-    testResults = struct();
-    testResults.totalTests = 0;
-    testResults.passedTests = 0;
-    testResults.failedTests = 0;
+    gradeResults = struct();
+    finalGrade = 0;
+    confidence = 0.5;
+    explanation = 'Default grade';
+    finalGrade = 0;
+    confidence = 0.5;
+    explanation = 'Default grade';
 % RUNALLUNITTESTS Automated unit testing harness for MathWorks SIH DR Screening Pipeline.
 %   Validates all 5 pillars and asserts compliance with clinical design targets.
 %
