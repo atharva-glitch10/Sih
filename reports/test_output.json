@@ -1,0 +1,12 @@
+{
+  "status": "SUCCESS",
+  "patientID": "TEST_PATIENT_101",
+  "iqaScore": "Gradeable",
+  "icdrGrade": 0.0000,
+  "gradeLabel": "No DR",
+  "confidence": 0.9500,
+  "isReferrable": false,
+  "dmeRisk": "Low",
+  "probabilities": [0.9500, 0.0200, 0.0100, 0.0100, 0.0100],
+  "reportPath": "reports\test_clinical_report.html"
+}
