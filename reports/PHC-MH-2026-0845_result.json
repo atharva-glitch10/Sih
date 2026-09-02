@@ -1,0 +1,41 @@
+{
+  "patientID": "PHC-MH-2026-0845",
+  "imagePath": "data/synthetic/DR_Grade1_Sample02.bmp",
+  "iqaScore": "74.2 (Gradeable)",
+  "icdrGrade": 3,
+  "gradeLabel": "Grade 3 - Severe Non-Proliferative DR (Severe NPDR)",
+  "confidence": 0.945,
+  "isReferrable": true,
+  "dmeRisk": "Moderate Risk",
+  "dmeScore": 75,
+  "probabilities": [
+    0.02,
+    0.05,
+    0.15,
+    0.72,
+    0.06
+  ],
+  "ruleExplanation": "4-2-1 Rule evaluated: Severe intraretinal hemorrhages occurring across 4 quadrants.",
+  "biomarkers": {
+    "OpticDiscCenter": [
+      143,
+      256
+    ],
+    "OpticDiscRadius": 36,
+    "FoveaCenter": [
+      332,
+      256
+    ],
+    "VesselDensity": 0.114,
+    "MicroaneurysmsCount": 18,
+    "HardExudatesArea": 210,
+    "HemorrhagesCount": 24,
+    "HemorrhageQuadrantDistribution": {
+      "Q1_ST": 6,
+      "Q2_SN": 5,
+      "Q3_IN": 7,
+      "Q4_IT": 6
+    },
+    "Neovascularization": false
+  }
+}
