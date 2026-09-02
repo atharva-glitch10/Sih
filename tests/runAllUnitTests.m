@@ -15,6 +15,14 @@ function testResults = runAllUnitTests()
     fprintf('\n=======================================================\n');
     fprintf('  RUNNING COMPREHENSIVE MATHWORKS SIH UNIT TEST SUITE \n');
     fprintf('=======================================================\n');
+    % Auto-load Octave packages if running under GNU Octave
+    if exist('OCTAVE_VERSION', 'builtin') ~= 0
+        try pkg load image; catch; end
+        try pkg load signal; catch; end
+        try pkg load statistics; catch; end
+        warning('off', 'all');
+    end
+
     % Setup paths
     baseDir = fileparts(fileparts(mfilename('fullpath')));
     addpath(genpath(fullfile(baseDir, 'src')));

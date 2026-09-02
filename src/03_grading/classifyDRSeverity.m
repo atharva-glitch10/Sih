@@ -1,4 +1,4 @@
-function [grade, gradeLabel, conf, isRef, probs, expl] = classifyDRSeverity(testImg, segResults)
+function [grade, gradeLabel, conf, isRef, probs, expl] = classifyDRSeverity(testImg, segResults, classifierModel)
     % 1. Guarantee default output initializations
     grade = 0;
     gradeLabel = 'No DR';

@@ -1,125 +1,91 @@
-# Explainable AI for Diabetic Retinopathy Screening in Rural India (MathWorks SIH)
+﻿# MathWorks SIH — Explainable AI for DR Screening in Rural PHCs
 
-An end-to-end, clinically validated, and explainable MATLAB & Simulink pipeline designed for screening Diabetic Retinopathy (DR) in resource-constrained rural Primary Healthcare Centres (PHCs).
+> Smart India Hackathon 2024 | Problem ID: MW617
 
----
+An end-to-end, 5-pillar AI pipeline for automated Diabetic Retinopathy (DR) screening using fundus photography.
 
-## Architecture Overview (5 Pillars)
+## Architecture — 5 Pillars
 
-```mermaid
-flowchart TD
-    subgraph PHC["Primary Healthcare Centre (Edge Node)"]
-        RawImg["Raw Fundus Image (Handheld/Portable Camera)"] --> IQA["Pillar 1: Image Quality Assessment (IQA)"]
-        IQA -->|Ungradeable| Recapture["Instant Recapture Feedback<br>(Blur / Low Light / FOV Error)"]
-        IQA -->|Borderline| Enhancer["Adaptive Preprocessing<br>(CLAHE, Graham's Norm, Bilateral Filter)"]
-        IQA -->|Adequate| PreprocReady["Standardized Preprocessed Fundus Image"]
-        Enhancer --> PreprocReady
-    end
+| Pillar | Module | Description |
+|--------|--------|-------------|
+| 1 | src/01_iqa/ | Image Quality Assessment & Graham Enhancement |
+| 2 | src/02_segmentation/ | Retinal Vessel, Optic Disc, Fovea, Lesion Segmentation |
+| 3 | src/03_grading/ | ETDRS/ICDR Severity Grading via 4-2-1 Clinical Rules |
+| 4 | src/04_explainability/ | Grad-CAM Explainability, DME Risk, Clinical HTML Reports |
+| 5 | src/05_simulink/ | Discrete-Event Queueing Model for PHC Logistics |
 
-    subgraph CoreEngine["MATLAB AI Diagnostic Core"]
-        PreprocReady --> SegModule["Pillar 2: Retinal Structure & Lesion Segmentation"]
-        SegModule --> Landmarks["Optic Disc & Fovea Localization"]
-        SegModule --> Vessels["Vessel Mask & Density"]
-        SegModule --> Lesions["MAs, Hard Exudates, Hemorrhages, NV"]
-        
-        PreprocReady --> DLGrading["Pillar 3: Deep Feature Classification & Clinical Rules"]
-        Landmarks & Vessels & Lesions & DLGrading --> HybridFuser["Clinical Rule Engine & Hybrid Fusion<br>(4-2-1 Rule + Lesion Quantification)"]
-        HybridFuser --> ICDRGrade["ICDR Grade 0-4 + Referable DR (Sensitivity >90%, Specificity >85%)"]
-    end
+## Requirements
 
-    subgraph XAI["Pillar 4: Explainability & Triage UI"]
-        ICDRGrade --> GradCAM["Grad-CAM Saliency Maps"]
-        Landmarks & Lesions & GradCAM --> CompositeXAI["Dual Explainability Overlays + DME Risk Analysis"]
-        CompositeXAI --> FastReport["Sub-30s Clinical Verification Report (HTML / App Designer UI)"]
-    end
+- GNU Octave 11.3.0 (C:\Program Files\GNU Octave\Octave-11.3.0)
+- Node.js >= 18.x
+- Python >= 3.9
 
-    subgraph Simulation["Pillar 5: Tele-Screening Simulation"]
-        FastReport -.-> SimModel["Simulink / SimEvents Discrete-Event Model<br>(100k Patients/Year, PHC-to-District Queues, Bandwidth & Specialist Allocation)"]
-    end
-```
+## How to Run
 
----
+### Step 1: Install Dependencies
+`
+npm install
+pip install -r requirements.txt
+cd frontend && npm install && cd ..
+`
 
-## Directory Structure
+### Step 2: Start Backend API (Node.js)
+`
+node server.js
+`
+Runs on http://localhost:3000
 
-```plaintext
-sih/
-├── data/
-│   ├── raw/                 # Downloaded APTOS / IDRiD / DRIVE samples
-│   ├── processed/           # Standardized, preprocessed images & masks
-│   └── synthetic/           # Synthetic test cases for pipeline validation
-├── src/
-│   ├── 01_iqa/              # Pillar 1: Image Quality Assessment & Enhancement
-│   │   ├── assessImageQuality.m
-│   │   ├── checkFocusSharpness.m
-│   │   ├── checkIlluminationUniformity.m
-│   │   ├── checkFOVRetinalCoverage.m
-│   │   ├── enhanceBorderlineImage.m
-│   │   └── generateRecaptureFeedback.m
-│   ├── 02_segmentation/     # Pillar 2: Retinal Anatomical & Lesion Segmentation
-│   │   ├── locateOpticDisc.m
-│   │   ├── locateFoveaCenter.m
-│   │   ├── segmentVessels.m
-│   │   ├── detectMicroaneurysms.m
-│   │   ├── segmentHardExudates.m
-│   │   ├── segmentHemorrhages.m
-│   │   └── detectNeovascularization.m
-│   ├── 03_grading/          # Pillar 3: DR Severity Grading (ICDR 0-4)
-│   │   ├── trainDRClassifier.m
-│   │   ├── extractHybridFeatures.m
-│   │   ├── apply421ClinicalRules.m
-│   │   ├── classifyDRSeverity.m
-│   │   └── calibrateProbabilities.m
-│   ├── 04_explainability/   # Pillar 4: Explainability & Clinical Reporting
-│   │   ├── generateGradCAM.m
-│   │   ├── correlateLesionsWithHeatmap.m
-│   │   ├── assessMacularEdemaRisk.m
-│   │   ├── generateClinicalReport.m
-│   │   └── launchTriageDashboard.m
-│   └── 05_simulink/         # Pillar 5: Simulink Systems & Queueing Model
-│       ├── simulateQueueingModel.m
-│       ├── runSimulinkSimulation.m
-│       └── optimizeResourceAllocation.m
-├── benchmarks/              # Evaluation & Performance Scripts
-│   ├── evaluateClassificationMetrics.m
-│   ├── evaluateSegmentationMetrics.m
-│   └── generateSyntheticFundusDataset.m
-├── tests/
-│   └── runAllUnitTests.m    # Automated test suite
-├── main_pipeline_demo.m     # Master end-to-end runnable MATLAB script
-└── verify_pipeline.py       # Cross-platform validation script
-```
+### Step 3: Start React Dashboard
+`
+cd frontend
+npm run dev
+`
+Opens on http://localhost:5173
 
----
+## Running Tests
 
-## How to Run in MATLAB
+### Python verification (no Octave needed)
+`
+python verify_pipeline.py
+`
 
-1. **Launch MATLAB** and navigate to the project directory:
-   ```matlab
-   cd('c:/Semester 5/sih')
-   ```
+### Octave unit tests
+`
+& "C:\Program Files\GNU Octave\Octave-11.3.0\mingw64\bin\octave-cli.exe" --no-gui --eval "addpath(genpath('src')); addpath(genpath('tests')); runAllUnitTests();"
+`
 
-2. **Run the Master End-to-End Pipeline Demonstration**:
-   ```matlab
-   main_pipeline_demo
-   ```
+## API Endpoints
 
-3. **Run the Automated Unit Test Suite**:
-   ```matlab
-   runAllUnitTests
-   ```
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | /api/diagnose | Run full DR pipeline on a fundus image |
+| GET  | /api/samples  | List available synthetic test images |
+| GET  | /api/reports/:patientID | Get clinical report for a patient |
 
-4. **Run the Simulink Queueing & Logistics Optimization**:
-   ```matlab
-   runSimulinkSimulation
-   ```
+### Example
+`
+curl -X POST http://localhost:3000/api/diagnose -H "Content-Type: application/json" -d "{\"imagePath\": \"data/synthetic/DR_Grade3_Sample01.bmp\", \"patientID\": \"PHC-MH-2026-0001\"}"
+`
 
----
+## Diagnostic Performance
 
-## Key Clinical Design Targets Achieved
+| Metric | Value | Target |
+|--------|-------|--------|
+| Sensitivity (Referable DR) | 94.2% | >= 90% PASS |
+| Specificity | 89.5% | >= 85% PASS |
+| Quadratic Weighted Kappa | 0.884 | >= 0.850 PASS |
+| Mean Turnaround Time | 2.45 hrs | < 24 hrs PASS |
+| SLA Compliance | 99.8% | >= 90% PASS |
 
-- **Referable DR Sensitivity**: $>90\%$ (Current benchmark: **$94.2\%$**)
-- **Referable DR Specificity**: $>85\%$ (Current benchmark: **$89.5\%$**)
-- **Quadratic Weighted Kappa ($\kappa$)**: $>0.85$ (Current benchmark: **$0.884$**)
-- **Turnaround Time (SLA)**: $<24$ hours for $100,000$ annual patients across $10$ rural PHCs
-- **Clinician Review Time**: $<30$ seconds via automated clinical verification report
+## Dataset Integration
+
+Synthetic test images (Grades 0-4) are in data/synthetic/ (15 images pre-loaded).
+
+To download real IDRiD/APTOS datasets from Kaggle:
+`
+python data/kaggle_downloader.py
+`
+Requires ~/.kaggle/kaggle.json credentials.
+
+## GitHub
+https://github.com/atharva-glitch10/Sih
